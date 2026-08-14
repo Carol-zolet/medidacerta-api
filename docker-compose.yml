@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: medidacerta
+    ports:
+      - '5433:5432'
+    volumes:
+      - medidacerta_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/medidacerta?schema=public
+      JWT_SECRET: troque-por-um-segredo-forte-em-producao
+      JWT_EXPIRES_IN: 7d
+      PORT: 3000
+    ports:
+      - '3000:3000'
+
+volumes:
+  medidacerta_pgdata:

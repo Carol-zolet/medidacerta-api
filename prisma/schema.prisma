@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id            String   @id @default(uuid())
+  nome          String
+  sobrenome     String
+  email         String   @unique
+  senhaHash     String   @map("senha_hash")
+  codigoAcesso  String?  @unique @map("codigo_acesso")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  medidas Medida?
+
+  @@map("usuarios")
+}
+
+model Medida {
+  id             String   @id @default(uuid())
+  usuarioId      String   @unique @map("usuario_id")
+  busto          Decimal  @db.Decimal(5, 2)
+  torax          Decimal  @db.Decimal(5, 2)
+  cintura        Decimal  @db.Decimal(5, 2)
+  quadril        Decimal  @db.Decimal(5, 2)
+  coxa           Decimal  @db.Decimal(5, 2)
+  numeroCalcado  Decimal  @map("numero_calcado") @db.Decimal(3, 1)
+  atualizadoEm   DateTime @updatedAt @map("atualizado_em")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("medidas")
+}
