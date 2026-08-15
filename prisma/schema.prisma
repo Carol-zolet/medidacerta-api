@@ -14,6 +14,8 @@ model Usuario {
   email         String   @unique
   senhaHash     String   @map("senha_hash")
   codigoAcesso  String?  @unique @map("codigo_acesso")
+  resetToken        String?   @unique @map("reset_token")
+  resetTokenExpires DateTime? @map("reset_token_expires")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
