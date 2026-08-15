@@ -1,5 +1,10 @@
 import { Test } from '@nestjs/testing';
-import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
@@ -105,6 +110,30 @@ describe('AuthService', () => {
       await expect(
         service.login({ email: 'naoexiste@example.com', senha: 'qualquer123' }),
       ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('nunca loga a senha em texto puro numa tentativa de login falha', async () => {
+      const warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+      const senhaSecreta = 'senhaSuperSecreta123';
+
+      const senhaHash = await bcrypt.hash('outraSenhaQualquer1', 10);
+      prisma.usuario.findUnique.mockResolvedValueOnce({
+        id: 'u1',
+        email: 'maria@example.com',
+        senhaHash,
+      });
+
+      await expect(
+        service.login({ email: 'maria@example.com', senha: senhaSecreta }, '127.0.0.1'),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(warnSpy).toHaveBeenCalled();
+      const mensagensLogadas = warnSpy.mock.calls.map((chamada) => String(chamada[0]));
+      for (const mensagem of mensagensLogadas) {
+        expect(mensagem).not.toContain(senhaSecreta);
+      }
+
+      warnSpy.mockRestore();
     });
   });
 

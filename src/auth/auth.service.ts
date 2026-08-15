@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -12,6 +13,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UsuarioEntity } from '../users/entities/usuario.entity';
 
 const SALT_ROUNDS = 10;
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hora
@@ -20,6 +22,8 @@ const MENSAGEM_GENERICA_FORGOT_PASSWORD =
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -45,25 +49,30 @@ export class AuthService {
       },
     });
 
-    return {
-      id: usuario.id,
-      nome: usuario.nome,
-      sobrenome: usuario.sobrenome,
-      email: usuario.email,
-    };
+    // senhaHash nunca chega ao cliente: UsuarioEntity a marca com @Exclude()
+    // e o ClassSerializerInterceptor global a remove da resposta.
+    return new UsuarioEntity(usuario);
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto, ip?: string) {
     const usuario = await this.prisma.usuario.findUnique({
       where: { email: dto.email },
     });
 
     if (!usuario) {
+      // Log interno diferencia o motivo para fins de monitoramento de segurança,
+      // mas a senha em si NUNCA é logada e a resposta ao cliente é sempre genérica.
+      this.logger.warn(
+        `Tentativa de login falhou (usuário não encontrado): email=${dto.email} ip=${ip ?? 'desconhecido'}`,
+      );
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
     const senhaValida = await bcrypt.compare(dto.senha, usuario.senhaHash);
     if (!senhaValida) {
+      this.logger.warn(
+        `Tentativa de login falhou (senha incorreta): email=${dto.email} ip=${ip ?? 'desconhecido'}`,
+      );
       throw new UnauthorizedException('Credenciais inválidas');
     }
 

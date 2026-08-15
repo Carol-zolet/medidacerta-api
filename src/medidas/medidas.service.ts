@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpsertMedidasDto } from './dto/upsert-medidas.dto';
 
@@ -14,6 +14,8 @@ function gerarSufixo(tamanho = 6): string {
 
 @Injectable()
 export class MedidasService {
+  private readonly logger = new Logger(MedidasService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   private async gerarCodigoAcessoUnico(): Promise<string> {
@@ -77,16 +79,20 @@ export class MedidasService {
     return medida;
   }
 
-  async findByCodigoAcesso(codigo: string) {
+  async findByCodigoAcesso(codigo: string, ip?: string) {
     const usuario = await this.prisma.usuario.findUnique({
       where: { codigoAcesso: codigo },
       include: { medidas: true },
     });
 
     if (!usuario || !usuario.medidas) {
+      this.logger.warn(
+        `Consulta pública falhou (código não encontrado): codigo=${codigo} ip=${ip ?? 'desconhecido'}`,
+      );
       throw new NotFoundException('Código não encontrado');
     }
 
+    this.logger.log(`Consulta pública bem-sucedida: codigo=${codigo} ip=${ip ?? 'desconhecido'}`);
     return usuario.medidas;
   }
 }

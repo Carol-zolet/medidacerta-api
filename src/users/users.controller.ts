@@ -1,5 +1,14 @@
-import { Controller, Delete, Get, UseGuards } from '@nestjs/common';
+import {
+  ClassSerializerInterceptor,
+  Controller,
+  Delete,
+  Get,
+  Req,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser, JwtPayloadUser } from '../common/decorators/current-user.decorator';
 import { UsersService } from './users.service';
@@ -7,6 +16,7 @@ import { UsersService } from './users.service';
 @ApiTags('users')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@UseInterceptors(ClassSerializerInterceptor)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -19,7 +29,7 @@ export class UsersController {
 
   @Delete('me')
   @ApiOperation({ summary: 'Exclui o usuário autenticado e suas medidas' })
-  remove(@CurrentUser() user: JwtPayloadUser) {
-    return this.usersService.remove(user.sub);
+  remove(@CurrentUser() user: JwtPayloadUser, @Req() req: Request) {
+    return this.usersService.remove(user.sub, req.ip);
   }
 }

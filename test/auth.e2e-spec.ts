@@ -95,4 +95,74 @@ describe('Auth (e2e)', () => {
       .send({ nome: 'Maria' })
       .expect(400);
   });
+
+  describe('Enumeration - mensagem de login sempre genérica', () => {
+    it('e-mail inexistente e senha errada retornam exatamente a mesma mensagem (401)', async () => {
+      // Caso 1: e-mail não cadastrado
+      prismaMock.usuario.findUnique.mockResolvedValueOnce(null);
+      const resEmailInexistente = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: 'naoexiste@example.com', senha: 'qualquer1234' })
+        .expect(401);
+
+      // Caso 2: e-mail existe, senha errada
+      prismaMock.usuario.findUnique.mockResolvedValueOnce({
+        id: 'u1',
+        email: 'maria@example.com',
+        senhaHash: '$2b$10$hashQualquerCoisaQueNaoBateComASenhaEnviada',
+      });
+      const resSenhaErrada = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: 'maria@example.com', senha: 'senhaErrada123' })
+        .expect(401);
+
+      expect(resEmailInexistente.body.message).toBe(resSenhaErrada.body.message);
+      expect(resEmailInexistente.body.message).toBe('Credenciais inválidas');
+    });
+  });
+
+  describe('Política de senha no registro', () => {
+    it('rejeita (400) senha com menos de 8 caracteres', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ nome: 'Ana', sobrenome: 'Curta', email: 'curta@example.com', senha: 'abc123' })
+        .expect(400);
+
+      expect(JSON.stringify(res.body.message)).toContain('8 caracteres');
+    });
+
+    it('rejeita (400) senha sem nenhum número', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          nome: 'Ana',
+          sobrenome: 'SemNumero',
+          email: 'semnumero@example.com',
+          senha: 'senhaSemNumero',
+        })
+        .expect(400);
+
+      expect(JSON.stringify(res.body.message)).toContain('número');
+    });
+
+    it('aceita (201) senha com 8+ caracteres e ao menos um número', async () => {
+      prismaMock.usuario.findUnique.mockResolvedValueOnce(null);
+      prismaMock.usuario.create.mockResolvedValueOnce({
+        id: 'u2',
+        nome: 'Ana',
+        sobrenome: 'Valida',
+        email: 'valida@example.com',
+      });
+
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          nome: 'Ana',
+          sobrenome: 'Valida',
+          email: 'valida@example.com',
+          senha: 'senhaValida1',
+        })
+        .expect(201);
+    });
+  });
 });
