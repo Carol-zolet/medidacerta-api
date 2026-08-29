@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -7,6 +8,16 @@ import { AllExceptionsFilter } from '../src/common/filters/all-exceptions.filter
 
 describe('Medidas (e2e)', () => {
   let app: INestApplication;
+  let jwtService: JwtService;
+
+  const medidasValidas = {
+    busto: 90.5,
+    torax: 85.0,
+    cintura: 70.0,
+    quadril: 95.0,
+    coxa: 55.0,
+    numero_calcado: 38.5,
+  };
 
   const prismaMock = {
     usuario: {
@@ -35,6 +46,8 @@ describe('Medidas (e2e)', () => {
     );
     app.useGlobalFilters(new AllExceptionsFilter());
     await app.init();
+
+    jwtService = moduleRef.get(JwtService);
   });
 
   afterEach(() => {
@@ -97,5 +110,68 @@ describe('Medidas (e2e)', () => {
   it('GET /health responde com status do Postgres', async () => {
     const res = await request(app.getHttpServer()).get('/health').expect(200);
     expect(res.body.status).toBe('ok');
+  });
+
+  describe('Validação de outliers antropométricos', () => {
+    function token() {
+      return jwtService.sign({ sub: 'u1', email: 'ana@example.com' });
+    }
+
+    it('aceita (201) medidas dentro dos intervalos plausíveis', async () => {
+      prismaMock.usuario.findUnique.mockResolvedValueOnce({ id: 'u1', codigoAcesso: 'MC-ABC123' });
+      prismaMock.medida.upsert.mockResolvedValueOnce({ id: 'm1', usuarioId: 'u1' });
+
+      await request(app.getHttpServer())
+        .post('/medidas')
+        .set('Authorization', `Bearer ${token()}`)
+        .send(medidasValidas)
+        .expect(201);
+    });
+
+    it('rejeita (400) cintura abaixo do mínimo (ex: digitação errada)', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/medidas')
+        .set('Authorization', `Bearer ${token()}`)
+        .send({ ...medidasValidas, cintura: 10 })
+        .expect(400);
+
+      expect(JSON.stringify(res.body.message)).toContain('Cintura deve estar entre 40 e 200 cm');
+      expect(prismaMock.medida.upsert).not.toHaveBeenCalled();
+    });
+
+    it('rejeita (400) cintura acima do máximo (ex: 300cm digitado por engano)', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/medidas')
+        .set('Authorization', `Bearer ${token()}`)
+        .send({ ...medidasValidas, cintura: 300 })
+        .expect(400);
+
+      expect(JSON.stringify(res.body.message)).toContain('Cintura deve estar entre 40 e 200 cm');
+      expect(prismaMock.medida.upsert).not.toHaveBeenCalled();
+    });
+
+    it('rejeita (400) número do calçado abaixo do mínimo', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/medidas')
+        .set('Authorization', `Bearer ${token()}`)
+        .send({ ...medidasValidas, numero_calcado: 5 })
+        .expect(400);
+
+      expect(JSON.stringify(res.body.message)).toContain(
+        'Número do calçado deve estar entre 15 e 55',
+      );
+    });
+
+    it('rejeita (400) número do calçado acima do máximo', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/medidas')
+        .set('Authorization', `Bearer ${token()}`)
+        .send({ ...medidasValidas, numero_calcado: 90 })
+        .expect(400);
+
+      expect(JSON.stringify(res.body.message)).toContain(
+        'Número do calçado deve estar entre 15 e 55',
+      );
+    });
   });
 });
