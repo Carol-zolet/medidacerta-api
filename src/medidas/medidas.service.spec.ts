@@ -79,9 +79,7 @@ describe('MedidasService', () => {
     it('lança NotFoundException (404) quando o código de acesso não existe', async () => {
       prisma.usuario.findUnique.mockResolvedValueOnce(null);
 
-      await expect(service.findByCodigoAcesso('MC-INEXISTENTE')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findByCodigoAcesso('MC-INEXISTENTE')).rejects.toThrow(NotFoundException);
     });
 
     it('retorna as medidas quando o código de acesso existe', async () => {

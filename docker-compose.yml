@@ -24,7 +24,10 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/medidacerta?schema=public
-      JWT_SECRET: troque-por-um-segredo-forte-em-producao
+      # Lida do .env na raiz do projeto (o docker compose carrega automaticamente),
+      # o mesmo já usado pelo Prisma/Node — nunca hardcode o valor real aqui.
+      # Exemplo de valor (ver .env.example): JWT_SECRET=troque-por-um-segredo-forte-em-producao
+      JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: 7d
       PORT: 3000
     ports:

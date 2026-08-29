@@ -24,7 +24,7 @@ export class MedidasService {
 
     do {
       codigo = `MC-${gerarSufixo()}`;
-      // eslint-disable-next-line no-await-in-loop
+
       const usuario = await this.prisma.usuario.findUnique({
         where: { codigoAcesso: codigo },
       });

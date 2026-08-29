@@ -90,10 +90,7 @@ describe('Auth (e2e)', () => {
   });
 
   it('POST /auth/register com payload inválido retorna 400', async () => {
-    await request(app.getHttpServer())
-      .post('/auth/register')
-      .send({ nome: 'Maria' })
-      .expect(400);
+    await request(app.getHttpServer()).post('/auth/register').send({ nome: 'Maria' }).expect(400);
   });
 
   describe('Enumeration - mensagem de login sempre genérica', () => {

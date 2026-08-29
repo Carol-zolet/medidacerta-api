@@ -97,7 +97,7 @@ export class AuthService {
       });
 
       // Simula o envio de e-mail: neste MVP acadêmico não há serviço de e-mail configurado.
-      // eslint-disable-next-line no-console
+
       console.log(
         `[forgot-password] Token de reset para ${usuario.email}: ${resetToken} (expira em ${resetTokenExpires.toISOString()})`,
       );

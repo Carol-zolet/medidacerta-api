@@ -73,6 +73,8 @@ docker compose exec api npx prisma migrate deploy
 ### Auth
 - `POST /auth/register` — cria usuário
 - `POST /auth/login` — retorna JWT
+- `POST /auth/forgot-password` — gera token de reset de senha (válido por 1h, logado no console)
+- `POST /auth/reset-password` — redefine a senha a partir do token
 
 ### Users (autenticado)
 - `GET /users/me`
@@ -82,6 +84,18 @@ docker compose exec api npx prisma migrate deploy
 - `POST /medidas` (autenticado) — cria/atualiza medidas; gera `codigo_acesso` na primeira vez
 - `GET /medidas/me` (autenticado)
 - `GET /api/v1/medidas/:codigo` (público) — consulta por código de acesso
+
+### Health
+- `GET /health` — verifica a saúde da API e a conexão com o PostgreSQL
+
+## Testes
+
+```bash
+npm test          # testes unitários (Auth e Medidas services)
+npm run test:e2e  # testes end-to-end (HTTP real, Prisma mockado)
+```
+
+O CI (`.github/workflows/ci.yml`) roda ambos automaticamente a cada push/PR na `main`.
 
 ## Deploy no Render
 

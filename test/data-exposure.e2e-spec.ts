@@ -42,7 +42,13 @@ describe('Excessive Data Exposure (e2e)', () => {
     $disconnect: jest.fn(),
   };
 
-  const CAMPOS_SENSIVEIS = ['senhaHash', 'senha_hash', 'resetToken', 'reset_token', 'resetTokenExpires'];
+  const CAMPOS_SENSIVEIS = [
+    'senhaHash',
+    'senha_hash',
+    'resetToken',
+    'reset_token',
+    'resetTokenExpires',
+  ];
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
