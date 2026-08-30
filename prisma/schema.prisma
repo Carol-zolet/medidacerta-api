@@ -1,5 +1,9 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // "native" cobre o dev local (Windows/Mac/Linux glibc); o segundo alvo é o
+  // motor linux-musl com OpenSSL 3.x, necessário na imagem node:*-alpine do
+  // Dockerfile (Alpine usa musl libc, não glibc) usada no deploy do Render.
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
