@@ -30,6 +30,6 @@ export class UsersController {
   @Delete('me')
   @ApiOperation({ summary: 'Exclui o usuário autenticado e suas medidas' })
   remove(@CurrentUser() user: JwtPayloadUser, @Req() req: Request) {
-    return this.usersService.remove(user.sub, req.ip);
+    return this.usersService.remove(user.sub, req.ip, req.id);
   }
 }

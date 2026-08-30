@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { MedidasService } from './medidas.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 describe('MedidasService', () => {
   let service: MedidasService;
@@ -9,6 +10,7 @@ describe('MedidasService', () => {
     usuario: { findUnique: jest.Mock; update: jest.Mock };
     medida: { upsert: jest.Mock; findUnique: jest.Mock };
   };
+  let auditLogService: { registrar: jest.Mock };
 
   const dtoBase = {
     busto: 90.5,
@@ -24,9 +26,14 @@ describe('MedidasService', () => {
       usuario: { findUnique: jest.fn(), update: jest.fn() },
       medida: { upsert: jest.fn(), findUnique: jest.fn() },
     };
+    auditLogService = { registrar: jest.fn().mockResolvedValue(undefined) };
 
     const moduleRef = await Test.createTestingModule({
-      providers: [MedidasService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        MedidasService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: AuditLogService, useValue: auditLogService },
+      ],
     }).compile();
 
     service = moduleRef.get(MedidasService);
@@ -64,6 +71,43 @@ describe('MedidasService', () => {
       await expect(service.upsertMinhasMedidas('inexistente', dtoBase as any)).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('registra auditoria CREATE_MEDIDAS quando não havia medida anterior', async () => {
+      prisma.usuario.findUnique.mockResolvedValueOnce({ id: 'u1', codigoAcesso: 'MC-ABC123' });
+      prisma.medida.findUnique.mockResolvedValueOnce(null); // sem medida anterior
+      const medidaCriada = { id: 'm1', usuarioId: 'u1', ...dtoBase };
+      prisma.medida.upsert.mockResolvedValueOnce(medidaCriada);
+
+      await service.upsertMinhasMedidas('u1', dtoBase as any, '127.0.0.1', 'req-1');
+
+      expect(auditLogService.registrar).toHaveBeenCalledWith({
+        usuarioId: 'u1',
+        acao: 'CREATE_MEDIDAS',
+        dadosAntes: null,
+        dadosDepois: medidaCriada,
+        ip: '127.0.0.1',
+        requestId: 'req-1',
+      });
+    });
+
+    it('registra auditoria UPDATE_MEDIDAS com valores antigos e novos quando já existia medida', async () => {
+      prisma.usuario.findUnique.mockResolvedValueOnce({ id: 'u1', codigoAcesso: 'MC-ABC123' });
+      const medidaAntiga = { id: 'm1', usuarioId: 'u1', busto: 80, torax: 75 };
+      prisma.medida.findUnique.mockResolvedValueOnce(medidaAntiga);
+      const medidaNova = { id: 'm1', usuarioId: 'u1', ...dtoBase };
+      prisma.medida.upsert.mockResolvedValueOnce(medidaNova);
+
+      await service.upsertMinhasMedidas('u1', dtoBase as any, '127.0.0.1', 'req-2');
+
+      expect(auditLogService.registrar).toHaveBeenCalledWith({
+        usuarioId: 'u1',
+        acao: 'UPDATE_MEDIDAS',
+        dadosAntes: medidaAntiga,
+        dadosDepois: medidaNova,
+        ip: '127.0.0.1',
+        requestId: 'req-2',
+      });
     });
   });
 

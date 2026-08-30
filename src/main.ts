@@ -8,7 +8,20 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      // useDefaults (true por padrão) mescla isso com os demais diretivos
+      // padrão do helmet — inclusive style-src 'unsafe-inline', que é o que
+      // permite o Swagger UI renderizar (ele usa CSS inline). Só defaultSrc
+      // é sobrescrito explicitamente aqui.
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+        },
+      },
+      referrerPolicy: { policy: 'no-referrer' },
+    }),
+  );
   // Redundante com o hidePoweredBy do helmet, mas explícito: garante que o
   // header X-Powered-By: Express nunca seja enviado.
   app.getHttpAdapter().getInstance().disable('x-powered-by');

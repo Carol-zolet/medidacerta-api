@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser, JwtPayloadUser } from '../common/decorators/current-user.decorator';
 import { MedidasService } from './medidas.service';
@@ -17,8 +18,8 @@ export class MedidasController {
     summary:
       'Cria ou atualiza as medidas do usuário logado. Na primeira chamada gera o código de acesso.',
   })
-  upsert(@CurrentUser() user: JwtPayloadUser, @Body() dto: UpsertMedidasDto) {
-    return this.medidasService.upsertMinhasMedidas(user.sub, dto);
+  upsert(@CurrentUser() user: JwtPayloadUser, @Body() dto: UpsertMedidasDto, @Req() req: Request) {
+    return this.medidasService.upsertMinhasMedidas(user.sub, dto, req.ip, req.id);
   }
 
   @Get('me')

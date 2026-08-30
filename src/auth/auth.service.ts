@@ -54,7 +54,7 @@ export class AuthService {
     return new UsuarioEntity(usuario);
   }
 
-  async login(dto: LoginDto, ip?: string) {
+  async login(dto: LoginDto, ip?: string, requestId?: string) {
     const usuario = await this.prisma.usuario.findUnique({
       where: { email: dto.email },
     });
@@ -63,7 +63,7 @@ export class AuthService {
       // Log interno diferencia o motivo para fins de monitoramento de segurança,
       // mas a senha em si NUNCA é logada e a resposta ao cliente é sempre genérica.
       this.logger.warn(
-        `Tentativa de login falhou (usuário não encontrado): email=${dto.email} ip=${ip ?? 'desconhecido'}`,
+        `Tentativa de login falhou (usuário não encontrado): email=${dto.email} ip=${ip ?? 'desconhecido'} requestId=${requestId ?? 'desconhecido'}`,
       );
       throw new UnauthorizedException('Credenciais inválidas');
     }
@@ -71,7 +71,7 @@ export class AuthService {
     const senhaValida = await bcrypt.compare(dto.senha, usuario.senhaHash);
     if (!senhaValida) {
       this.logger.warn(
-        `Tentativa de login falhou (senha incorreta): email=${dto.email} ip=${ip ?? 'desconhecido'}`,
+        `Tentativa de login falhou (senha incorreta): email=${dto.email} ip=${ip ?? 'desconhecido'} requestId=${requestId ?? 'desconhecido'}`,
       );
       throw new UnauthorizedException('Credenciais inválidas');
     }

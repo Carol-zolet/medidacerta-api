@@ -63,6 +63,7 @@ describe('BOLA - Broken Object Level Authorization (e2e)', () => {
       delete: jest.fn(),
     },
     medida: { findUnique: jest.fn(), upsert: jest.fn() },
+    auditLog: { create: jest.fn() },
     $queryRaw: jest.fn().mockResolvedValue([{ result: 1 }]),
     $connect: jest.fn(),
     $disconnect: jest.fn(),

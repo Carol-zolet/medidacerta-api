@@ -16,6 +16,6 @@ export class MedidasPublicController {
       'Consulta pública das medidas por código de acesso (sem autenticação). Limite: 20 requisições/minuto por IP.',
   })
   findByCodigo(@Param('codigo') codigo: string, @Req() req: Request) {
-    return this.medidasService.findByCodigoAcesso(codigo, req.ip);
+    return this.medidasService.findByCodigoAcesso(codigo, req.ip, req.id);
   }
 }

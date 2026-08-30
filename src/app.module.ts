@@ -1,13 +1,15 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import * as Joi from 'joi';
 import { PrismaModule } from './prisma/prisma.module';
+import { AuditLogModule } from './audit-log/audit-log.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { MedidasModule } from './medidas/medidas.module';
 import { HealthModule } from './health/health.module';
+import { requestIdMiddleware } from './common/middleware/request-id.middleware';
 
 @Module({
   imports: [
@@ -43,6 +45,7 @@ import { HealthModule } from './health/health.module';
       },
     ]),
     PrismaModule,
+    AuditLogModule,
     AuthModule,
     UsersModule,
     MedidasModule,
@@ -55,4 +58,10 @@ import { HealthModule } from './health/health.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // Aplicado via NestModule (não só em main.ts) pra também valer nos testes
+    // e2e, que constroem o app a partir do AppModule sem passar pelo bootstrap.
+    consumer.apply(requestIdMiddleware).forRoutes('*');
+  }
+}

@@ -39,3 +39,19 @@ model Medida {
 
   @@map("medidas")
 }
+
+// Trilha de auditoria interna. Sem FK para Usuario de propósito: o registro
+// precisa sobreviver à exclusão da conta (é justamente o que documenta o
+// DELETE_CONTA), então usuarioId aqui é só uma referência solta, não uma
+// relação com integridade referencial.
+model AuditLog {
+  id          String   @id @default(uuid())
+  usuarioId   String   @map("usuario_id")
+  acao        String
+  dadosAntes  Json?    @map("dados_antes")
+  dadosDepois Json?    @map("dados_depois")
+  ip          String?
+  criadoEm    DateTime @default(now()) @map("criado_em")
+
+  @@map("audit_log")
+}

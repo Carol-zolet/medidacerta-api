@@ -35,7 +35,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Autentica um usuário e retorna um JWT' })
   login(@Body() dto: LoginDto, @Req() req: Request) {
-    return this.authService.login(dto, req.ip);
+    return this.authService.login(dto, req.ip, req.id);
   }
 
   @Post('forgot-password')
