@@ -118,6 +118,15 @@ export class MedidasService {
     this.logger.log(
       `Consulta pública bem-sucedida: codigo=${codigo} ip=${ip ?? 'desconhecido'} requestId=${requestId ?? 'desconhecido'}`,
     );
+
+    await this.auditLogService.registrar({
+      usuarioId: usuario.id,
+      acao: 'CONSULTA_PUBLICA',
+      dadosDepois: { codigo, consultadoEm: new Date().toISOString() },
+      ip,
+      requestId,
+    });
+
     return usuario.medidas;
   }
 }

@@ -138,5 +138,32 @@ describe('MedidasService', () => {
 
       expect(resultado).toBe(medidas);
     });
+
+    it('registra auditoria CONSULTA_PUBLICA quando o código é encontrado', async () => {
+      const medidas = { id: 'm1', usuarioId: 'u1' };
+      prisma.usuario.findUnique.mockResolvedValueOnce({
+        id: 'u1',
+        codigoAcesso: 'MC-ABC123',
+        medidas,
+      });
+
+      await service.findByCodigoAcesso('MC-ABC123', '127.0.0.1', 'req-3');
+
+      expect(auditLogService.registrar).toHaveBeenCalledWith({
+        usuarioId: 'u1',
+        acao: 'CONSULTA_PUBLICA',
+        dadosDepois: expect.objectContaining({ codigo: 'MC-ABC123' }),
+        ip: '127.0.0.1',
+        requestId: 'req-3',
+      });
+    });
+
+    it('não registra auditoria quando o código não é encontrado', async () => {
+      prisma.usuario.findUnique.mockResolvedValueOnce(null);
+
+      await expect(service.findByCodigoAcesso('MC-INEXISTENTE')).rejects.toThrow(NotFoundException);
+
+      expect(auditLogService.registrar).not.toHaveBeenCalled();
+    });
   });
 });

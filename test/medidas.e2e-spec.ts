@@ -27,7 +27,7 @@ describe('Medidas (e2e)', () => {
       delete: jest.fn(),
     },
     medida: { findUnique: jest.fn(), upsert: jest.fn() },
-    auditLog: { create: jest.fn() },
+    auditLog: { create: jest.fn(), findMany: jest.fn() },
     $queryRaw: jest.fn().mockResolvedValue([{ result: 1 }]),
     $connect: jest.fn(),
     $disconnect: jest.fn(),
@@ -106,6 +106,16 @@ describe('Medidas (e2e)', () => {
     const res = await request(app.getHttpServer()).get('/api/v1/medidas/MC-ABC123').expect(200);
 
     expect(res.body.id).toBe('m1');
+
+    // Consulta pública bem-sucedida gera registro de audit log.
+    expect(prismaMock.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          usuarioId: 'u1',
+          acao: 'CONSULTA_PUBLICA',
+        }),
+      }),
+    );
   });
 
   it('GET /health responde com status do Postgres', async () => {

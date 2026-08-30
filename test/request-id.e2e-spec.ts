@@ -11,7 +11,7 @@ describe('X-Request-ID (e2e)', () => {
   const prismaMock = {
     usuario: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn() },
     medida: { findUnique: jest.fn(), upsert: jest.fn() },
-    auditLog: { create: jest.fn() },
+    auditLog: { create: jest.fn(), findMany: jest.fn() },
     $queryRaw: jest.fn().mockResolvedValue([{ result: 1 }]),
     $connect: jest.fn(),
     $disconnect: jest.fn(),
